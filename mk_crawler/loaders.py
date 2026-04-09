@@ -20,3 +20,6 @@ class MaktabkhoonehUnitLoader(ItemLoader):
 
     file_urls_in = Identity()
     file_urls_out = Identity()
+
+    course_dir_in = Identity()
+    course_dir_out = Identity()

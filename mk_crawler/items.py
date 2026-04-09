@@ -7,4 +7,5 @@ class MaktabkhoonehUnitItem(scrapy.Item):
     page_url = scrapy.Field()
     mp4_url = scrapy.Field()
     filename = scrapy.Field()
+    course_dir = scrapy.Field()
     file_urls = scrapy.Field()
