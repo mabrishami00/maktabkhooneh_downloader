@@ -15,11 +15,14 @@ NEWSPIDER_MODULE = "mk_crawler.spiders"
 ADDONS = {}
 
 
-# Crawl responsibly by identifying yourself (and your website) on the user-agent
-#USER_AGENT = "mk_crawler (+http://www.yourdomain.com)"
+# Use a real browser UA; the default Scrapy UA is often blocked (403) while Chrome works.
+USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+)
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False
 
 # Concurrency and throttling settings
 #CONCURRENT_REQUESTS = 16
@@ -32,11 +35,6 @@ DOWNLOAD_DELAY = 1
 # Disable Telnet Console (enabled by default)
 #TELNETCONSOLE_ENABLED = False
 
-# Override the default request headers:
-#DEFAULT_REQUEST_HEADERS = {
-#    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-#    "Accept-Language": "en",
-#}
 
 # Enable or disable spider middlewares
 # See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
@@ -58,9 +56,12 @@ DOWNLOAD_DELAY = 1
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    "mk_crawler.pipelines.MkCrawlerPipeline": 300,
-#}
+ITEM_PIPELINES = {
+    "mk_crawler.pipelines.NamedFilesPipeline": 300,
+}
+
+# Where downloaded files are stored (relative to project root).
+FILES_STORE = "downloads"
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
