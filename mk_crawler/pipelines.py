@@ -1,4 +1,5 @@
 import os
+import posixpath
 
 from scrapy.pipelines.files import FilesPipeline
 
@@ -10,5 +11,7 @@ class NamedFilesPipeline(FilesPipeline):
         if item:
             name = item.get("filename")
             course_dir = item.get("course_dir")
-            return f"{course_dir}/{os.path.basename(name)}"
+            base = os.path.basename(name) if name else None
+            if base:
+                return posixpath.join(course_dir, base)
         return super().file_path(request, response=response, info=info, item=item)
