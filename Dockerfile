@@ -17,7 +17,7 @@ RUN uv sync --frozen --no-install-project
 COPY . .
 RUN uv sync --frozen
 
-FROM python:3.13-slim-bookworm AS runtime
+FROM builder AS runtime
 
 ARG APP_HOME=/app
 WORKDIR ${APP_HOME}
