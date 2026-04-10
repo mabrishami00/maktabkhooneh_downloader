@@ -25,9 +25,9 @@ USER_AGENT = (
 ROBOTSTXT_OBEY = False
 
 # Concurrency (higher = faster; reduce if the site rate-limits or errors)
-CONCURRENT_REQUESTS = 16
-CONCURRENT_REQUESTS_PER_DOMAIN = 8
-DOWNLOAD_DELAY = 0
+CONCURRENT_REQUESTS = 4
+CONCURRENT_REQUESTS_PER_DOMAIN = 2
+DOWNLOAD_DELAY = 3
 
 # Disable cookies (enabled by default)
 #COOKIES_ENABLED = False
