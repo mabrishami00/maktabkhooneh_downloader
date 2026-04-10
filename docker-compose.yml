@@ -1,0 +1,9 @@
+services:
+  crawler:
+    build: .
+    image: maktabkhooneh-downloader:local
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./downloads:/app/downloads
+    command: ["python", "main.py"]
