@@ -3,7 +3,6 @@ from urllib.parse import parse_qs, unquote, urlparse
 import scrapy
 
 from mk_crawler.loaders import MaktabkhoonehUnitLoader
-from mk_crawler.utils import slugify_course_dir, title_to_course_hint
 
 
 class MaktabkhoonehSpider(scrapy.Spider):
@@ -19,7 +18,7 @@ class MaktabkhoonehSpider(scrapy.Spider):
 
     def parse(self, response):
         sessionid = getattr(self, "sessionid", None)
-        course_dir = getattr(self, "course_name", None)
+        course_dir = getattr(self, "course_dir", None)
         cookies = {"sessionid": sessionid} if sessionid else None
 
 
