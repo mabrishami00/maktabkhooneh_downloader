@@ -9,7 +9,6 @@ class MaktabkhoonehSpider(scrapy.Spider):
     name = "maktabkhooneh"
     allowed_domains = ["maktabkhooneh.org"]
 
-
     async def start(self):
         start_url = getattr(self, "start_url", None)
         sessionid = getattr(self, "sessionid", None)
@@ -21,7 +20,6 @@ class MaktabkhoonehSpider(scrapy.Spider):
         course_dir = getattr(self, "course_dir", None)
         cookies = {"sessionid": sessionid} if sessionid else None
 
-
         unit_hrefs = response.xpath(
             "//a[contains(concat(' ', normalize-space(@class), ' '), ' desktop-unit-nav__unit ')]/@href"
         ).getall()
@@ -32,6 +30,7 @@ class MaktabkhoonehSpider(scrapy.Spider):
 
         unit_urls = []
         seen = set()
+
         for href in unit_hrefs:
             url = response.urljoin(href)
             if url in seen:
@@ -42,12 +41,17 @@ class MaktabkhoonehSpider(scrapy.Spider):
         if not unit_urls:
             self.logger.warning("No unit links found on %s", response.url)
 
+   
+        current_url = response.url.split("#", 1)[0].rstrip("/")
+
         for idx, url in enumerate(unit_urls, start=1):
+            unit_url = url.split("#", 1)[0].rstrip("/")
             yield scrapy.Request(
                 url,
                 callback=self.parse_unit,
                 meta={"unit_index": idx, "course_dir": course_dir},
                 cookies=cookies,
+                dont_filter=(unit_url == current_url),
             )
 
     def parse_unit(self, response):
@@ -55,17 +59,7 @@ class MaktabkhoonehSpider(scrapy.Spider):
         course_dir = response.meta["course_dir"]
         title = response.xpath("normalize-space(//title/text())").get()
 
-        mp4_url = response.xpath(
-            "(//source[contains(concat(' ', normalize-space(@class), ' '), ' js-player__source ') "
-            "and contains(@src,'.mp4') and contains(@src,'/videos/hq')]/@src)[1]"
-        ).get()
-        if not mp4_url:
-            mp4_url = response.xpath(
-                "(//source[contains(concat(' ', normalize-space(@class), ' '), ' js-player__source ') "
-                "and contains(@src,'.mp4')]/@src)[1]"
-            ).get()
-        if not mp4_url:
-            mp4_url = response.xpath("(//meta[@property='og:video']/@content)[1]").get()
+        mp4_url = self._get_mp4_url(response)
         if mp4_url:
             mp4_url = response.urljoin(mp4_url)
 
@@ -90,3 +84,22 @@ class MaktabkhoonehSpider(scrapy.Spider):
         loader.add_value("course_dir", course_dir)
         loader.add_value("file_urls", [mp4_url] if mp4_url else [])
         yield loader.load_item()
+
+    def _get_mp4_url(self, response):
+        mp4_url = response.xpath(
+            "(//source[contains(concat(' ', normalize-space(@class), ' '), ' js-player__source ') "
+            "and contains(@src,'.mp4') and contains(@src,'/videos/hq')]/@src)[1]"
+        ).get()
+        if not mp4_url:
+            mp4_url = response.xpath(
+                "(//source[contains(concat(' ', normalize-space(@class), ' '), ' js-player__source ') "
+                "and contains(@src,'.mp4')]/@src)[1]"
+            ).get()
+        if not mp4_url:
+            mp4_url = response.xpath(
+                "(//source[contains(concat(' ', normalize-space(@class), ' '), ' js-player__source ') "
+                "and contains(@data-src,'.mp4')]/@data-src)[1]"
+            ).get()
+        if not mp4_url:
+            mp4_url = response.xpath("(//meta[@property='og:video']/@content)[1]").get()
+        return mp4_url
