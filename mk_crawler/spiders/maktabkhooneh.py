@@ -1,8 +1,11 @@
-from urllib.parse import parse_qs, unquote, urlparse
+import json
+import re
 
 import scrapy
 
-from mk_crawler.loaders import MaktabkhoonehUnitLoader
+from mk_crawler.items import MaktabkhoonehUnitItem
+
+AVAILABLE_QUALITIES = [1080, 720, 480, 360, 240]
 
 
 class MaktabkhoonehSpider(scrapy.Spider):
@@ -10,96 +13,97 @@ class MaktabkhoonehSpider(scrapy.Spider):
     allowed_domains = ["maktabkhooneh.org"]
 
     async def start(self):
-        start_url = getattr(self, "start_url", None)
-        sessionid = getattr(self, "sessionid", None)
-        cookies = {"sessionid": sessionid} if sessionid else None
-        yield scrapy.Request(start_url, callback=self.parse, cookies=cookies)
+        slug = self._course_slug()
+        api_url = f"https://maktabkhooneh.org/api/v1/courses/{slug}/chapters/"
+        yield scrapy.Request(
+            api_url, callback=self.parse_chapters, cookies=self._cookies()
+        )
 
-    def parse(self, response):
-        sessionid = getattr(self, "sessionid", None)
-        course_dir = getattr(self, "course_dir", None)
-        cookies = {"sessionid": sessionid} if sessionid else None
+    def parse_chapters(self, response):
+        data = json.loads(response.text)
+        chapters = data.get("chapters", [])
+        course_dir = getattr(self, "course_dir", "course")
+        quality = int(getattr(self, "quality", 720))
 
-        unit_hrefs = response.xpath(
-            "//a[contains(concat(' ', normalize-space(@class), ' '), ' desktop-unit-nav__unit ')]/@href"
-        ).getall()
-        if not unit_hrefs:
-            unit_hrefs = response.xpath(
-                "//a[contains(@class,'unit-nav__unit')]/@href"
-            ).getall()
-
-        unit_urls = []
-        seen = set()
-
-        for href in unit_hrefs:
-            url = response.urljoin(href)
-            if url in seen:
-                continue
-            seen.add(url)
-            unit_urls.append(url)
-
-        if not unit_urls:
-            self.logger.warning("No unit links found on %s", response.url)
-
-   
-        current_url = response.url.split("#", 1)[0].rstrip("/")
-
-        for idx, url in enumerate(unit_urls, start=1):
-            unit_url = url.split("#", 1)[0].rstrip("/")
-            yield scrapy.Request(
-                url,
-                callback=self.parse_unit,
-                meta={"unit_index": idx, "course_dir": course_dir},
-                cookies=cookies,
-                dont_filter=(unit_url == current_url),
+        for ch_idx, chapter in enumerate(chapters, start=1):
+            ch_title = self._sanitize_filename(
+                chapter.get("title", f"chapter_{ch_idx}")
             )
+            chapter_dir = f"{ch_idx:02d}-{ch_title}"
 
-    def parse_unit(self, response):
-        idx = int(response.meta["unit_index"])
-        course_dir = response.meta["course_dir"]
-        title = response.xpath("normalize-space(//title/text())").get()
+            unit_counter = 0
+            for unit in chapter.get("units", []):
+                if unit.get("type") != "lecture":
+                    continue
+                unit_counter += 1
+                unit_id = unit["id"]
+                unit_title = unit.get("title", f"unit_{unit_id}")
+                video_api = (
+                    f"https://maktabkhooneh.org/api/v1/lms/units/{unit_id}/video_url/"
+                )
+                yield scrapy.Request(
+                    video_api,
+                    callback=self.parse_video_url,
+                    cookies=self._cookies(),
+                    meta={
+                        "course_dir": course_dir,
+                        "chapter_dir": chapter_dir,
+                        "unit_index": unit_counter,
+                        "unit_title": unit_title,
+                        "quality": quality,
+                    },
+                    dont_filter=True,
+                )
 
-        mp4_url = self._get_mp4_url(response)
-        if mp4_url:
-            mp4_url = response.urljoin(mp4_url)
+    def parse_video_url(self, response):
+        meta = response.meta
+        data = json.loads(response.text)
 
-        filename = None
-        if mp4_url:
-            parsed = urlparse(mp4_url)
-            qs = parse_qs(parsed.query)
-            name_from_query = (qs.get("name") or [None])[0]
-            if name_from_query:
-                base = unquote(name_from_query)
-            else:
-                base = unquote((parsed.path or "").rstrip("/").split("/")[-1])
-            if base:
-                filename = f"{idx}-{base}"
+        qualities = data.get("qualities", [])
+        chosen = self._pick_quality(qualities, meta["quality"])
 
-        loader = MaktabkhoonehUnitLoader(response=response)
-        loader.add_value("index", idx)
-        loader.add_value("title", title)
-        loader.add_value("page_url", response.url)
-        loader.add_value("mp4_url", mp4_url)
-        loader.add_value("filename", filename)
-        loader.add_value("course_dir", course_dir)
-        loader.add_value("file_urls", [mp4_url] if mp4_url else [])
-        yield loader.load_item()
+        if not chosen:
+            self.logger.warning(
+                "No video qualities for unit '%s', skipping", meta["unit_title"]
+            )
+            return
 
-    def _get_mp4_url(self, response):
-        mp4_url = response.xpath(
-            "(//source[contains(concat(' ', normalize-space(@class), ' '), ' js-player__source ') "
-            "and contains(@src,'.mp4') and contains(@src,'/videos/hq')]/@src)[1]"
-        ).get()
-        if not mp4_url:
-            mp4_url = response.xpath(
-                "(//source[contains(concat(' ', normalize-space(@class), ' '), ' js-player__source ') "
-                "and contains(@src,'.mp4')]/@src)[1]"
-            ).get()
-        if not mp4_url:
-            mp4_url = response.xpath(
-                "(//source[contains(concat(' ', normalize-space(@class), ' '), ' js-player__source ') "
-                "and contains(@data-src,'.mp4')]/@data-src)[1]"
-            ).get()
-        if not mp4_url:
-            mp4_url = response.xpath("(//meta[@property='og:video']/@content)[1]").get()
-        return mp4_url
+        download_url = chosen["download_url"]
+        unit_title = self._sanitize_filename(meta["unit_title"])
+        filename = f"{meta['unit_index']}-{unit_title}.mp4"
+
+        yield MaktabkhoonehUnitItem(
+            index=meta["unit_index"],
+            title=meta["unit_title"],
+            mp4_url=download_url,
+            filename=filename,
+            course_dir=meta["course_dir"],
+            chapter_dir=meta["chapter_dir"],
+            file_urls=[download_url],
+        )
+
+    def _cookies(self):
+        sid = getattr(self, "sessionid", None)
+        return {"sessionid": sid} if sid else None
+
+    def _course_slug(self):
+        url = getattr(self, "start_url", "")
+        match = re.search(r"/course/([^/]+)", url)
+        return match.group(1) if match else url.rstrip("/").split("/")[-1]
+
+    def _sanitize_filename(self, name: str) -> str:
+        return re.sub(r'[<>:"/\\|?*]', "_", name).strip().rstrip(".")
+
+    def _pick_quality(self, qualities: list[dict], target: int) -> dict | None:
+        if not qualities:
+            return None
+        by_res = {q["resolution"]: q for q in qualities}
+        if target in by_res:
+            return by_res[target]
+        below = sorted([r for r in by_res if r < target], reverse=True)
+        if below:
+            return by_res[below[0]]
+        above = sorted(r for r in by_res if r > target)
+        if above:
+            return by_res[above[0]]
+        return qualities[0]
