@@ -1,12 +1,3 @@
-# Scrapy settings for mk_crawler project
-#
-# For simplicity, this file contains only settings considered important or
-# commonly used. You can find more settings consulting the documentation:
-#
-#     https://docs.scrapy.org/en/latest/topics/settings.html
-#     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-#     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
-
 BOT_NAME = "mk_crawler"
 
 SPIDER_MODULES = ["mk_crawler.spiders"]
@@ -15,77 +6,24 @@ NEWSPIDER_MODULE = "mk_crawler.spiders"
 ADDONS = {}
 
 
-# Use a real browser UA; the default Scrapy UA is often blocked (403) while Chrome works.
 USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
 )
 
-# Obey robots.txt rules
+
 ROBOTSTXT_OBEY = False
 
-# Concurrency (higher = faster; reduce if the site rate-limits or errors)
 CONCURRENT_REQUESTS = 4
 CONCURRENT_REQUESTS_PER_DOMAIN = 2
 DOWNLOAD_DELAY = 3
 
-# Disable cookies (enabled by default)
-#COOKIES_ENABLED = False
-
-# Disable Telnet Console (enabled by default)
-#TELNETCONSOLE_ENABLED = False
-
-
-# Enable or disable spider middlewares
-# See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
-#SPIDER_MIDDLEWARES = {
-#    "mk_crawler.middlewares.MkCrawlerSpiderMiddleware": 543,
-#}
-
-# Enable or disable downloader middlewares
-# See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-#DOWNLOADER_MIDDLEWARES = {
-#    "mk_crawler.middlewares.MkCrawlerDownloaderMiddleware": 543,
-#}
-
-# Enable or disable extensions
-# See https://docs.scrapy.org/en/latest/topics/extensions.html
-#EXTENSIONS = {
-#    "scrapy.extensions.telnet.TelnetConsole": None,
-#}
-
-# Configure item pipelines
-# See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
     "mk_crawler.pipelines.NamedFilesPipeline": 300,
 }
 
-# Where downloaded files are stored (relative to project root).
 FILES_STORE = "downloads"
 
-# Skip re-downloading existing files for a very long time (see FilesPipeline.media_to_download).
 FILES_EXPIRES = 365000
 
-# Enable and configure the AutoThrottle extension (disabled by default)
-# See https://docs.scrapy.org/en/latest/topics/autothrottle.html
-#AUTOTHROTTLE_ENABLED = True
-# The initial download delay
-#AUTOTHROTTLE_START_DELAY = 5
-# The maximum download delay to be set in case of high latencies
-#AUTOTHROTTLE_MAX_DELAY = 60
-# The average number of requests Scrapy should be sending in parallel to
-# each remote server
-#AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
-# Enable showing throttling stats for every response received:
-#AUTOTHROTTLE_DEBUG = False
-
-# Enable and configure HTTP caching (disabled by default)
-# See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html#httpcache-middleware-settings
-#HTTPCACHE_ENABLED = True
-#HTTPCACHE_EXPIRATION_SECS = 0
-#HTTPCACHE_DIR = "httpcache"
-#HTTPCACHE_IGNORE_HTTP_CODES = []
-#HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
-
-# Set settings whose default value is deprecated to a future-proof value
 FEED_EXPORT_ENCODING = "utf-8"
