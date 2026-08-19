@@ -85,9 +85,6 @@ You will be prompted for:
 Use a URL that shows the course page where **units/lessons are listed** (the crawler extracts unit links from there).
 
 - **Good**: the main course page that contains the unit navigation/sidebar
-- **Usually not ideal**: a single video page (it may only crawl one unit)
-
-Add your screenshot here:
 
 ![Course page URL example](docs/images/course-url-example.png)
 
