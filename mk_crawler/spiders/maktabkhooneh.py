@@ -1,5 +1,6 @@
 import json
 import re
+from urllib.parse import unquote
 
 import scrapy
 
@@ -87,9 +88,11 @@ class MaktabkhoonehSpider(scrapy.Spider):
         return {"sessionid": sid} if sid else None
 
     def _course_slug(self):
-        url = getattr(self, "start_url", "")
-        match = re.search(r"/course/([^/]+)", url)
-        return match.group(1) if match else url.rstrip("/").split("/")[-1]
+        url = unquote(getattr(self, "start_url", ""))
+        match = re.search(r"/(?:lms/)?course/([^/?#]+)", url)
+        if match:
+            return match.group(1)
+        return url.split("?", 1)[0].split("#", 1)[0].rstrip("/").split("/")[-1]
 
     def _sanitize_filename(self, name: str) -> str:
         return re.sub(r'[<>:"/\\|?*]', "_", name).strip().rstrip(".")

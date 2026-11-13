@@ -4,6 +4,9 @@ services:
     image: maktabkhooneh-downloader:local
     stdin_open: true
     tty: true
+    env_file:
+      - path: .env
+        required: false
     volumes:
       - ./downloads:/app/downloads
     command: ["python", "main.py"]

@@ -13,6 +13,9 @@ __pycache__/
 downloads/
 output.json
 
+# Secrets
+.env
+
 # Editor / tooling
 .idea/
 .vscode/

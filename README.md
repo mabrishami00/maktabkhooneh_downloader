@@ -76,15 +76,18 @@ uv run python main.py
 ```
 
 You will be prompted for:
-- **Start URL**: the maktabkhooneh course (or unit list) URL (see below)
+- **Start URL**: a maktabkhooneh course URL, or a unit URL copied from the player (see below)
 - **Course folder name (optional)**: becomes `<course_dir>` (it is sanitized to be OS-safe)
-- **sessionid (optional, hidden)**: paste your cookie value if the content requires login (see below)
+- **sessionid (optional, hidden)**: paste your cookie value if the content requires login. If `SESSIONID` is set in `.env`, press Enter to keep it, or type a different value to override it (see below)
 
 ## How to choose the Start URL (course URL)
 
-Use a URL that shows the course page where **units/lessons are listed** (the crawler extracts unit links from there).
+Either of these works. A unit link is rewritten to the course link before the crawl starts.
 
-- **Good**: the main course page that contains the unit navigation/sidebar
+- Course page: `https://maktabkhooneh.org/course/<slug>/`
+- Unit page: `https://maktabkhooneh.org/lms/course/<slug>/unit/<id>/`
+
+The course page is the one that lists units/lessons:
 
 ![Course page URL example](docs/images/course-url-example.png)
 
@@ -100,7 +103,23 @@ Some courses require you to be logged in. This crawler can use your login cookie
 4) Go to the **Application** tab.
 5) In the left sidebar, go to **Storage → Cookies → `https://maktabkhooneh.org`**
 6) Find the cookie named **`sessionid`**
-7) Copy its **Value** and paste it when the program asks for `sessionid (hidden)`
+7) Copy its **Value**
+
+You can paste that value when the program asks for `sessionid`, or save it so you can skip the prompt next time:
+
+```bash
+cp .env.example .env
+```
+
+Put the cookie in `.env`:
+
+```bash
+SESSIONID=paste-the-cookie-value-here
+```
+
+`.env` is ignored by git. When `SESSIONID` is set, the prompt says you can press Enter to keep it. Typing a new value uses that value for this run only and does not change `.env`.
+
+Docker Compose reads the same `.env` file when it is present.
 
 ![Chrome cookies sessionid value](docs/images/chrome-cookies-sessionid.png)
 
